@@ -293,12 +293,17 @@ We now detail a number of member functions that can be invoked on `G`.
 - ScalarBaseMult(k): Output the scalar multiplication between Scalar `k` and the group generator `B`.
 - SerializeElement(A): Maps an `Element` `A` to a canonical byte array `buf` of fixed length `Ne`. This
   function can raise an error if `A` is the identity element of the group.
+  This is used to encode elements for sending between participants.
+- SerializeElementForSignature(A): Maps an `Element` `A` to a byte array `buf`.
+  This is used for encoding the point in the signature. Its length is specified by the ciphersuite.
 - DeserializeElement(buf): Attempts to map a byte array `buf` to an `Element` `A`,
   and fails if the input is not the valid canonical byte representation of an element of
   the group. This function can raise an error if deserialization fails
   or `A` is the identity element of the group; see {{ciphersuites}} for group-specific
   input validation steps.
 - SerializeScalar(s): Maps a Scalar `s` to a canonical byte array `buf` of fixed length `Ns`.
+- SerializeScalarForSignature(s):  Maps a Scalar `s` to a byte array `buf`.
+  This is used for encoding the scalar in the signature. Its length is specified by the ciphersuite.
 - DeserializeScalar(buf): Attempts to map a byte array `buf` to a `Scalar` `s`.
   This function can raise an error if deserialization fails; see
   {{ciphersuites}} for group-specific input validation steps.
@@ -568,8 +573,8 @@ This section describes the subroutine for creating the per-message challenge.
   Outputs: A Scalar representing the challenge
 
   def compute_challenge(group_commitment, group_public_key, msg):
-    group_comm_enc = G.SerializeElement(group_commitment)
-    group_public_key_enc = G.SerializeElement(group_public_key)
+    group_comm_enc = G.SerializeElementForSignature(group_commitment)
+    group_public_key_enc = G.SerializeElementForSignature(group_public_key)
     challenge_input = group_comm_enc || group_public_key_enc || msg
     challenge = H2(challenge_input)
     return challenge
@@ -755,13 +760,17 @@ procedure to produce its own signature share.
 
   Outputs: a Scalar value representing the signature share
 
-  def sign(identifier, sk_i, group_public_key, nonce_i, msg, commitment_list):
+  def sign(identifier, sk_i, group_public_key, nonce_i, msg, commitment_list, taproot):
     # Compute the binding factor(s)
     binding_factor_list = compute_binding_factors(commitment_list, msg)
     binding_factor = binding_factor_for_participant(binding_factor_list, identifier)
 
     # Compute the group commitment
+    negated = False
     group_commitment = compute_group_commitment(commitment_list, binding_factor_list)
+    if taproot and group_commitment.y % 2 == 1:
+      negated = True
+      group_commitment = -group_commitment
 
     # Compute Lagrange coefficient
     participant_list = participants_from_commitment_list(commitment_list)
@@ -772,7 +781,10 @@ procedure to produce its own signature share.
 
     # Compute the signature share
     (hiding_nonce, binding_nonce) = nonce_i
-    sig_share = hiding_nonce + (binding_nonce * binding_factor) + (lambda_i * sk_i * challenge)
+    r_share = hiding_nonce + (binding_nonce * binding_factor)
+    if taproot and negated:
+      r_share = -r_share
+    sig_share = r_share + (lambda_i * sk_i * challenge)
 
     return sig_share
 ~~~
@@ -827,7 +839,12 @@ parameters, to check that the signature share is valid using the following proce
     binding_factor = binding_factor_for_participant(binding_factor_list, identifier)
 
     # Compute the group commitment
+    # Compute the group commitment
+    negated = False
     group_commitment = compute_group_commitment(commitment_list, binding_factor_list)
+    if taproot and group_commitment.y % 2 == 1:
+      negated = True
+      group_commitment = -group_commitment
 
     # Compute the commitment share
     (hiding_nonce_commitment, binding_nonce_commitment) = comm_i
@@ -885,8 +902,8 @@ The output signature (R, z) from the aggregation step MUST be encoded as follows
   } Signature;
 ~~~
 
-Where Signature.R_encoded is `G.SerializeElement(R)` and Signature.z_encoded is
-`G.SerializeScalar(z)`.
+Where Signature.R_encoded is `G.SerializeElementForSignature(R)` and Signature.z_encoded is
+`G.SerializeScalarForSignature(z)`.
 
 # Ciphersuites {#ciphersuites}
 
