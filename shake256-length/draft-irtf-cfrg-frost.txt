@@ -5,12 +5,12 @@
 CFRG                                                         D. Connolly
 Internet-Draft                                          Zcash Foundation
 Intended status: Informational                                  C. Komlo
-Expires: 2 June 2023            University of Waterloo, Zcash Foundation
+Expires: 5 June 2023            University of Waterloo, Zcash Foundation
                                                              I. Goldberg
                                                   University of Waterloo
                                                               C. A. Wood
                                                               Cloudflare
-                                                        29 November 2022
+                                                         2 December 2022
 
 
            Two-Round Threshold Schnorr Signatures with FROST
@@ -55,7 +55,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 2 June 2023.
+   This Internet-Draft will expire on 5 June 2023.
 
 Copyright Notice
 
@@ -1120,7 +1120,7 @@ def binding_factor_for_participant(binding_factor_list, identifier):
          the range [0, G.Order() - 1].  Note that this means the top
          three bits of the input MUST be zero.
 
-   *  Hash (H): SHA-512
+   *  Hash (H): SHA-512, which has 64 bytes of output
 
       -  H1(m): Implemented by computing H(contextString || "rho" || m),
          interpreting the 64-byte digest as a little-endian integer, and
@@ -1184,7 +1184,7 @@ def binding_factor_for_participant(binding_factor_list, identifier):
          the range [0, G.Order() - 1].  Note that this means the top
          three bits of the input MUST be zero.
 
-   *  Hash (H): SHA-512
+   *  Hash (H): SHA-512, which has 64 bytes of output
 
       -  H1(m): Implemented by computing H(contextString || "rho" || m)
          and mapping the output to a Scalar as described in [RISTRETTO],
@@ -1316,7 +1316,7 @@ def binding_factor_for_participant(binding_factor_list, identifier):
          input does not represent a Scalar in the range [0, G.Order() -
          1].
 
-   *  Hash (H): SHA-256
+   *  Hash (H): SHA-256, which has 32 bytes of output
 
       -  H1(m): Implemented as hash_to_field(m, 1) from [HASH-TO-CURVE],
          Section 5.2 using expand_message_xmd with SHA-256 with
@@ -1381,7 +1381,7 @@ def binding_factor_for_participant(binding_factor_list, identifier):
          input does not represent a Scalar in the range [0, G.Order() -
          1].
 
-   *  Hash (H): SHA-256
+   *  Hash (H): SHA-256, which has 32 bytes of output
 
       -  H1(m): Implemented as hash_to_field(m, 1) from [HASH-TO-CURVE],
          Section 5.2 using expand_message_xmd with SHA-256 with
